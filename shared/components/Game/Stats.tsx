@@ -18,6 +18,7 @@ import {
   LucideIcon
 } from 'lucide-react';
 import useStatsStore from '@/features/Progress/store/useStatsStore';
+import { useShallow } from 'zustand/react/shallow';
 import { findHighestCounts } from '@/shared/lib/helperFunctions';
 import { useClick } from '@/shared/hooks/useAudio';
 
@@ -57,14 +58,16 @@ const Stats: React.FC = () => {
     totalMilliseconds,
     correctAnswerTimes,
     characterScores
-  } = useStatsStore(state => ({
-    numCorrectAnswers: state.numCorrectAnswers,
-    numWrongAnswers: state.numWrongAnswers,
-    characterHistory: state.characterHistory,
-    totalMilliseconds: state.totalMilliseconds,
-    correctAnswerTimes: state.correctAnswerTimes,
-    characterScores: state.characterScores
-  }));
+  } = useStatsStore(
+    useShallow(state => ({
+      numCorrectAnswers: state.numCorrectAnswers,
+      numWrongAnswers: state.numWrongAnswers,
+      characterHistory: state.characterHistory,
+      totalMilliseconds: state.totalMilliseconds,
+      correctAnswerTimes: state.correctAnswerTimes,
+      characterScores: state.characterScores
+    }))
+  );
 
   // Memoized stat calculations
   const stats = useMemo(() => {
@@ -81,8 +84,8 @@ const Stats: React.FC = () => {
       numWrongAnswers > 0
         ? numCorrectAnswers / numWrongAnswers
         : numCorrectAnswers > 0
-        ? Infinity
-        : 0;
+          ? Infinity
+          : 0;
 
     // Calculate timing metrics
     const hasAnswers = correctAnswerTimes.length > 0;
@@ -125,7 +128,14 @@ const Stats: React.FC = () => {
       highestWrongChars,
       highestWrongCharsValue
     };
-  }, [totalMilliseconds, numCorrectAnswers, numWrongAnswers, correctAnswerTimes, characterHistory, characterScores]);
+  }, [
+    totalMilliseconds,
+    numCorrectAnswers,
+    numWrongAnswers,
+    correctAnswerTimes,
+    characterHistory,
+    characterScores
+  ]);
 
   const formatValue = (
     value: string | number | null | undefined,
@@ -137,8 +147,8 @@ const Stats: React.FC = () => {
   };
 
   const StatCard: React.FC<StatCardProps> = ({ title, stats }) => (
-    <div className='bg-[var(--bg-color)]  border-[var(--border-color)] rounded-lg p-6 w-full'>
-      <h3 className='text-2xl font-bold mb-6 text-[var(--secondary-color)] border-b-2 border-[var(--border-color)] pb-3'>
+    <div className='w-full rounded-lg border-[var(--border-color)] bg-[var(--bg-color)] p-6'>
+      <h3 className='mb-6 border-b-2 border-[var(--border-color)] pb-3 text-2xl font-bold text-[var(--secondary-color)]'>
         {title}
       </h3>
       <div className='space-y-4'>
@@ -150,16 +160,16 @@ const Stats: React.FC = () => {
               i < stats.length - 1 && 'border-b border-[var(--border-color)]/70'
             )}
           >
-            <div className='flex items-center gap-2 flex-1 min-w-0'>
+            <div className='flex min-w-0 flex-1 items-center gap-2'>
               <Icon
                 size={20}
-                className='text-[var(--secondary-color)] flex-shrink-0'
+                className='flex-shrink-0 text-[var(--secondary-color)]'
               />
-              <span className='text-sm md:text-base text-[var(--text-color)]/80 truncate'>
+              <span className='truncate text-sm text-[var(--text-color)]/80 md:text-base'>
                 {label}
               </span>
             </div>
-            <span className='font-semibold text-base md:text-lg whitespace-nowrap'>
+            <span className='text-base font-semibold whitespace-nowrap md:text-lg'>
               {value}
             </span>
           </div>
@@ -188,7 +198,11 @@ const Stats: React.FC = () => {
   ];
 
   const answerStats: StatItem[] = [
-    { label: 'Average Time', value: formatValue(stats.avgTime, 's'), Icon: Timer },
+    {
+      label: 'Average Time',
+      value: formatValue(stats.avgTime, 's'),
+      Icon: Timer
+    },
     {
       label: 'Fastest Answer',
       value: formatValue(stats.fastestTime, 's'),
@@ -201,7 +215,9 @@ const Stats: React.FC = () => {
     },
     {
       label: 'Correct/Incorrect Ratio',
-      value: formatValue(stats.ciRatio === Infinity ? '∞' : stats.ciRatio.toFixed(2)),
+      value: formatValue(
+        stats.ciRatio === Infinity ? '∞' : stats.ciRatio.toFixed(2)
+      ),
       Icon: TrendingUp
     }
   ];
@@ -236,28 +252,28 @@ const Stats: React.FC = () => {
   ];
 
   return (
-    <div className='min-h-screen w-full bg-[var(--bg-color)] px-4 py-8 md:py-12 flex items-center justify-center'>
-      <div className='max-w-7xl mx-auto w-full'>
+    <div className='flex min-h-screen w-full items-center justify-center bg-[var(--bg-color)] px-4 py-8 md:py-12'>
+      <div className='mx-auto w-full max-w-7xl'>
         {/* Header */}
         <button
           onClick={() => {
             playClick();
             toggleStats();
           }}
-          className='group flex items-center gap-3  justify-center w-full hover:cursor-pointer'
+          className='group flex w-full items-center justify-center gap-3 hover:cursor-pointer'
         >
           <ChevronsLeft
             size={32}
             className='text-[var(--border-color)] hover:text-[var(--secondary-color)]'
           />
-          <h2 className='text-3xl md:text-4xl font-bold flex items-center justify-center gap-3'>
+          <h2 className='flex items-center justify-center gap-3 text-3xl font-bold md:text-4xl'>
             Statistics
             <Activity size={32} className='text-[var(--secondary-color)]' />
           </h2>
         </button>
 
         {/* Stats Grid */}
-        <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8'>
+        <div className='grid grid-cols-1 gap-6 md:gap-8 lg:grid-cols-3'>
           <StatCard title='General' stats={generalStats} />
           <StatCard title='Answers' stats={answerStats} />
           <StatCard title='Characters' stats={characterStats} />

@@ -11,6 +11,7 @@ import { pickGameKeyMappings } from '@/shared/lib/keyMappings';
 import { useStopwatch } from 'react-timer-hook';
 import useStats from '@/shared/hooks/useStats';
 import useStatsStore from '@/features/Progress/store/useStatsStore';
+import { useShallow } from 'zustand/react/shallow';
 import Stars from '@/shared/components/Game/Stars';
 import AnswerSummary from '@/shared/components/Game/AnswerSummary';
 import SSRAudioButton from '@/shared/components/audio/SSRAudioButton';
@@ -42,65 +43,64 @@ interface OptionButtonProps {
   buttonRef?: (elem: HTMLButtonElement | null) => void;
 }
 
-const OptionButton = memo(({
-  option,
-  index,
-  isWrong,
-  isReverse,
-  quizType,
-  wordObjMap,
-  onClick,
-  buttonRef
-}: OptionButtonProps) => {
-  const optionLang = quizType === 'reading' ? 'ja' : isReverse ? 'ja' : undefined;
+const OptionButton = memo(
+  ({
+    option,
+    index,
+    isWrong,
+    isReverse,
+    quizType,
+    wordObjMap,
+    onClick,
+    buttonRef
+  }: OptionButtonProps) => {
+    const optionLang =
+      quizType === 'reading' ? 'ja' : isReverse ? 'ja' : undefined;
 
-  return (
-    <button
-      ref={buttonRef}
-      type="button"
-      disabled={isWrong}
-      className={clsx(
-        'py-5 pl-8 rounded-xl w-full md:w-1/2 flex flex-row justify-start items-center gap-1.5',
-        buttonBorderStyles,
-        'active:scale-95 md:active:scale-98 active:duration-200',
-        'text-[var(--border-color)]',
-        ' border-b-4',
-        isReverse ? 'text-4xl' : 'text-3xl',
-        isWrong &&
-          'hover:bg-[var(--card-color)] border-[var(--border-color)]',
-        !isWrong &&
-          'text-[var(--secondary-color)] border-[var(--secondary-color)]/50 hover:border-[var(--secondary-color)]'
-      )}
-      onClick={() => onClick(option)}
-      lang={optionLang}
-    >
-      <span className="flex-1 text-left">
-        {isReverse || quizType === 'meaning' ? (
-          <FuriganaText
-            text={option}
-            reading={
-              isReverse
-                ? wordObjMap.get(option)?.reading
-                : undefined
-            }
-          />
-        ) : (
-          <span>{option}</span>
-        )}
-      </span>
-      <span
+    return (
+      <button
+        ref={buttonRef}
+        type='button'
+        disabled={isWrong}
         className={clsx(
-          'hidden lg:inline text-xs rounded-full bg-[var(--border-color)] px-1 mr-4',
-          isWrong
-            ? 'text-[var(--border-color)]'
-            : 'text-[var(--secondary-color)]'
+          'flex w-full flex-row items-center justify-start gap-1.5 rounded-xl py-5 pl-8 md:w-1/2',
+          buttonBorderStyles,
+          'active:scale-95 active:duration-200 md:active:scale-98',
+          'text-[var(--border-color)]',
+          'border-b-4',
+          isReverse ? 'text-4xl' : 'text-3xl',
+          isWrong &&
+            'border-[var(--border-color)] hover:bg-[var(--card-color)]',
+          !isWrong &&
+            'border-[var(--secondary-color)]/50 text-[var(--secondary-color)] hover:border-[var(--secondary-color)]'
         )}
+        onClick={() => onClick(option)}
+        lang={optionLang}
       >
-        {index + 1}
-      </span>
-    </button>
-  );
-});
+        <span className='flex-1 text-left'>
+          {isReverse || quizType === 'meaning' ? (
+            <FuriganaText
+              text={option}
+              reading={isReverse ? wordObjMap.get(option)?.reading : undefined}
+            />
+          ) : (
+            <span>{option}</span>
+          )}
+        </span>
+        <span
+          className={clsx(
+            'mr-4 hidden rounded-full bg-[var(--border-color)] px-1 text-xs lg:inline',
+            isWrong
+              ? 'text-[var(--border-color)]'
+              : 'text-[var(--secondary-color)]'
+          )}
+        >
+          {index + 1}
+        </span>
+      </button>
+    );
+  }
+);
 
 OptionButton.displayName = 'OptionButton';
 
@@ -113,10 +113,12 @@ const VocabPickGame = ({ selectedWordObjs, isHidden }: VocabPickGameProps) => {
   const hasWords = !!selectedWordObjs && selectedWordObjs.length > 0;
   const { isReverse, decideNextMode, recordWrongAnswer } =
     useSmartReverseMode();
-  const { score, setScore } = useStatsStore(state => ({
-    score: state.score,
-    setScore: state.setScore
-  }));
+  const { score, setScore } = useStatsStore(
+    useShallow(state => ({
+      score: state.score,
+      setScore: state.setScore
+    }))
+  );
 
   const speedStopwatch = useStopwatch({ autoStart: false });
 
@@ -244,8 +246,8 @@ const VocabPickGame = ({ selectedWordObjs, isHidden }: VocabPickGameProps) => {
       generateNewCharacter();
       setFeedback(
         <>
-          <span className="text-[var(--secondary-color)]">{`${displayChar} = ${selectedOption} `}</span>
-          <CircleCheck className="inline text-[var(--main-color)]" />
+          <span className='text-[var(--secondary-color)]'>{`${displayChar} = ${selectedOption} `}</span>
+          <CircleCheck className='inline text-[var(--main-color)]' />
         </>
       );
       setCurrentWordObj(correctWordObj as IVocabObj);
@@ -253,8 +255,8 @@ const VocabPickGame = ({ selectedWordObjs, isHidden }: VocabPickGameProps) => {
       handleWrongAnswer(selectedOption);
       setFeedback(
         <>
-          <span className="text-[var(--secondary-color)]">{`${displayChar} ≠ ${selectedOption} `}</span>
-          <CircleX className="inline text-[var(--main-color)]" />
+          <span className='text-[var(--secondary-color)]'>{`${displayChar} ≠ ${selectedOption} `}</span>
+          <CircleX className='inline text-[var(--main-color)]' />
         </>
       );
     }
@@ -335,7 +337,7 @@ const VocabPickGame = ({ selectedWordObjs, isHidden }: VocabPickGameProps) => {
   return (
     <div
       className={clsx(
-        'flex flex-col gap-6 sm:gap-10 items-center w-full sm:w-4/5',
+        'flex w-full flex-col items-center gap-6 sm:w-4/5 sm:gap-10',
         isHidden ? 'hidden' : ''
       )}
     >
@@ -350,16 +352,16 @@ const VocabPickGame = ({ selectedWordObjs, isHidden }: VocabPickGameProps) => {
 
       {!displayAnswerSummary && (
         <>
-          <div className="flex flex-col items-center gap-4">
+          <div className='flex flex-col items-center gap-4'>
             {/* Show prompt based on quiz type */}
-            <span className="text-sm text-[var(--secondary-color)] mb-2">
+            <span className='mb-2 text-sm text-[var(--secondary-color)]'>
               {quizType === 'meaning'
                 ? isReverse
                   ? 'What is the word?' // reverse: given meaning, find word
                   : 'What is the meaning?' // normal: given word, find meaning
                 : 'What is the reading?'}
             </span>
-            <div className="flex flex-row justify-center items-center gap-1">
+            <div className='flex flex-row items-center justify-center gap-1'>
               <FuriganaText
                 text={displayChar ?? ''}
                 reading={
@@ -373,9 +375,9 @@ const VocabPickGame = ({ selectedWordObjs, isHidden }: VocabPickGameProps) => {
               {!isReverse && (
                 <SSRAudioButton
                   text={correctChar}
-                  variant="icon-only"
-                  size="sm"
-                  className="bg-[var(--card-color)] text-[var(--secondary-color)]"
+                  variant='icon-only'
+                  size='sm'
+                  className='bg-[var(--card-color)] text-[var(--secondary-color)]'
                 />
               )}
             </div>
@@ -383,7 +385,7 @@ const VocabPickGame = ({ selectedWordObjs, isHidden }: VocabPickGameProps) => {
 
           <div
             className={clsx(
-              'flex flex-col w-full gap-6 items-center '
+              'flex w-full flex-col items-center gap-6'
               // 'lg:flex-row'
             )}
           >

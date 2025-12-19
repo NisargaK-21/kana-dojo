@@ -11,6 +11,7 @@ import { pickGameKeyMappings } from '@/shared/lib/keyMappings';
 import { useStopwatch } from 'react-timer-hook';
 import useStats from '@/shared/hooks/useStats';
 import useStatsStore from '@/features/Progress/store/useStatsStore';
+import { useShallow } from 'zustand/react/shallow';
 import Stars from '@/shared/components/Game/Stars';
 import AnswerSummary from '@/shared/components/Game/AnswerSummary';
 import SSRAudioButton from '@/shared/components/audio/SSRAudioButton';
@@ -36,61 +37,63 @@ interface OptionButtonProps {
   buttonRef?: (elem: HTMLButtonElement | null) => void;
 }
 
-const OptionButton = memo(({
-  option,
-  index,
-  isWrong,
-  isReverse,
-  kanjiObjMap,
-  onClick,
-  buttonRef
-}: OptionButtonProps) => {
-  return (
-    <button
-      ref={buttonRef}
-      type="button"
-      disabled={isWrong}
-      className={clsx(
-        isReverse
-          ? 'w-1/3 md:w-1/4 lg:w-1/5 justify-center text-5xl'
-          : 'w-full md:w-1/2 pl-8 justify-start text-3xl md:text-4xl',
-        ' py-5   rounded-xl flex flex-row  items-center gap-1.5',
-        buttonBorderStyles,
-        'text-[var(--border-color)]',
-        ' border-b-4',
-        isWrong &&
-          'hover:bg-[var(--card-color)] border-[var(--border-color)]',
-        !isWrong &&
-          'text-[var(--secondary-color)] border-[var(--secondary-color)]/50 hover:border-[var(--secondary-color)]'
-      )}
-      onClick={() => onClick(option)}
-      lang={isReverse ? 'ja' : undefined}
-    >
-      <span className={clsx(isReverse ? '' : 'flex-1 text-left')}>
-        <FuriganaText
-          text={option}
-          reading={
-            isReverse
-              ? kanjiObjMap.get(option)?.onyomi[0] ||
-                kanjiObjMap.get(option)?.kunyomi[0]
-              : undefined
-          }
-        />
-      </span>
-      <span
+const OptionButton = memo(
+  ({
+    option,
+    index,
+    isWrong,
+    isReverse,
+    kanjiObjMap,
+    onClick,
+    buttonRef
+  }: OptionButtonProps) => {
+    return (
+      <button
+        ref={buttonRef}
+        type='button'
+        disabled={isWrong}
         className={clsx(
-          'hidden lg:inline text-xs rounded-full bg-[var(--border-color)] px-1',
-          isReverse ? '' : 'mr-4',
-          isWrong
-            ? 'text-[var(--border-color)]'
-            : 'text-[var(--secondary-color)]'
+          isReverse
+            ? 'w-1/3 justify-center text-5xl md:w-1/4 lg:w-1/5'
+            : 'w-full justify-start pl-8 text-3xl md:w-1/2 md:text-4xl',
+          'flex flex-row items-center gap-1.5 rounded-xl py-5',
+          buttonBorderStyles,
+          'text-[var(--border-color)]',
+          'border-b-4',
+          isWrong &&
+            'border-[var(--border-color)] hover:bg-[var(--card-color)]',
+          !isWrong &&
+            'border-[var(--secondary-color)]/50 text-[var(--secondary-color)] hover:border-[var(--secondary-color)]'
         )}
+        onClick={() => onClick(option)}
+        lang={isReverse ? 'ja' : undefined}
       >
-        {index + 1}
-      </span>
-    </button>
-  );
-});
+        <span className={clsx(isReverse ? '' : 'flex-1 text-left')}>
+          <FuriganaText
+            text={option}
+            reading={
+              isReverse
+                ? kanjiObjMap.get(option)?.onyomi[0] ||
+                  kanjiObjMap.get(option)?.kunyomi[0]
+                : undefined
+            }
+          />
+        </span>
+        <span
+          className={clsx(
+            'hidden rounded-full bg-[var(--border-color)] px-1 text-xs lg:inline',
+            isReverse ? '' : 'mr-4',
+            isWrong
+              ? 'text-[var(--border-color)]'
+              : 'text-[var(--secondary-color)]'
+          )}
+        >
+          {index + 1}
+        </span>
+      </button>
+    );
+  }
+);
 
 OptionButton.displayName = 'OptionButton';
 
@@ -102,10 +105,12 @@ interface KanjiPickGameProps {
 const KanjiPickGame = ({ selectedKanjiObjs, isHidden }: KanjiPickGameProps) => {
   const { isReverse, decideNextMode, recordWrongAnswer } =
     useSmartReverseMode();
-  const { score, setScore } = useStatsStore(state => ({
-    score: state.score,
-    setScore: state.setScore
-  }));
+  const { score, setScore } = useStatsStore(
+    useShallow(state => ({
+      score: state.score,
+      setScore: state.setScore
+    }))
+  );
 
   const speedStopwatch = useStopwatch({ autoStart: false });
 
@@ -230,16 +235,16 @@ const KanjiPickGame = ({ selectedKanjiObjs, isHidden }: KanjiPickGameProps) => {
       generateNewCharacter();
       setFeedback(
         <>
-          <span className="text-[var(--secondary-color)]">{`${displayChar} = ${selectedOption} `}</span>
-          <CircleCheck className="inline text-[var(--main-color)]" />
+          <span className='text-[var(--secondary-color)]'>{`${displayChar} = ${selectedOption} `}</span>
+          <CircleCheck className='inline text-[var(--main-color)]' />
         </>
       );
     } else {
       handleWrongAnswer(selectedOption);
       setFeedback(
         <>
-          <span className="text-[var(--secondary-color)]">{`${displayChar} ≠ ${selectedOption} `}</span>
-          <CircleX className="inline text-[var(--main-color)]" />
+          <span className='text-[var(--secondary-color)]'>{`${displayChar} ≠ ${selectedOption} `}</span>
+          <CircleX className='inline text-[var(--main-color)]' />
         </>
       );
     }
@@ -300,7 +305,7 @@ const KanjiPickGame = ({ selectedKanjiObjs, isHidden }: KanjiPickGameProps) => {
   return (
     <div
       className={clsx(
-        'flex flex-col gap-8 sm:gap-10 items-center w-full sm:w-4/5',
+        'flex w-full flex-col items-center gap-8 sm:w-4/5 sm:gap-10',
         isHidden ? 'hidden' : '',
         !isReverse && ''
       )}
@@ -316,7 +321,7 @@ const KanjiPickGame = ({ selectedKanjiObjs, isHidden }: KanjiPickGameProps) => {
 
       {!displayAnswerSummary && (
         <>
-          <div className="flex flex-row justify-center items-center gap-1">
+          <div className='flex flex-row items-center justify-center gap-1'>
             <FuriganaText
               text={displayChar ?? ''}
               reading={
@@ -330,16 +335,16 @@ const KanjiPickGame = ({ selectedKanjiObjs, isHidden }: KanjiPickGameProps) => {
             {!isReverse && (
               <SSRAudioButton
                 text={correctChar}
-                variant="icon-only"
-                size="sm"
-                className="bg-[var(--card-color)] text-[var(--secondary-color)]"
+                variant='icon-only'
+                size='sm'
+                className='bg-[var(--card-color)] text-[var(--secondary-color)]'
               />
             )}
           </div>
 
           <div
             className={clsx(
-              'flex w-full gap-6 items-center',
+              'flex w-full items-center gap-6',
               isReverse ? 'flex-row justify-evenly' : 'flex-col'
             )}
           >

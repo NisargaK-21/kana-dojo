@@ -11,6 +11,7 @@ import { buttonBorderStyles } from '@/shared/lib/styles';
 import { useStopwatch } from 'react-timer-hook';
 import useStats from '@/shared/hooks/useStats';
 import useStatsStore from '@/features/Progress/store/useStatsStore';
+import { useShallow } from 'zustand/react/shallow';
 import Stars from '@/shared/components/Game/Stars';
 import { useCrazyModeTrigger } from '@/features/CrazyMode/hooks/useCrazyModeTrigger';
 import { getGlobalAdaptiveSelector } from '@/shared/lib/adaptiveSelection';
@@ -26,10 +27,12 @@ interface InputGameProps {
 }
 
 const InputGame = ({ isHidden, isReverse = false }: InputGameProps) => {
-  const { score, setScore } = useStatsStore(state => ({
-    score: state.score,
-    setScore: state.setScore
-  }));
+  const { score, setScore } = useStatsStore(
+    useShallow(state => ({
+      score: state.score,
+      setScore: state.setScore
+    }))
+  );
 
   const speedStopwatch = useStopwatch({ autoStart: false });
 
@@ -64,11 +67,12 @@ const InputGame = ({ isHidden, isReverse = false }: InputGameProps) => {
 
   // Create mapping pairs based on mode
   const selectedPairs = useMemo(
-    () => Object.fromEntries(
-      isReverse
-        ? selectedRomaji.map((key, i) => [key, selectedKana[i]])
-        : selectedKana.map((key, i) => [key, selectedRomaji[i]])
-    ),
+    () =>
+      Object.fromEntries(
+        isReverse
+          ? selectedRomaji.map((key, i) => [key, selectedKana[i]])
+          : selectedKana.map((key, i) => [key, selectedRomaji[i]])
+      ),
     [isReverse, selectedRomaji, selectedKana]
   );
 
@@ -208,13 +212,13 @@ const InputGame = ({ isHidden, isReverse = false }: InputGameProps) => {
   return (
     <div
       className={clsx(
-        'flex flex-col gap-4 sm:gap-10 items-center w-full sm:w-4/5',
+        'flex w-full flex-col items-center gap-4 sm:w-4/5 sm:gap-10',
         isHidden ? 'hidden' : ''
       )}
     >
       <GameIntel gameMode={gameMode} feedback={feedback} />
       <div className='flex flex-row items-center gap-1'>
-        <p className='text-8xl sm:text-9xl font-medium'>{correctChar}</p>
+        <p className='text-8xl font-medium sm:text-9xl'>{correctChar}</p>
 
         {/* {!isReverse && (
           <SSRAudioButton
@@ -231,7 +235,7 @@ const InputGame = ({ isHidden, isReverse = false }: InputGameProps) => {
         type='text'
         value={inputValue}
         className={clsx(
-          'border-b-2 pb-1 text-center focus:outline-none text-2xl lg:text-5xl text-[var(--secondary-color)]',
+          'border-b-2 pb-1 text-center text-2xl text-[var(--secondary-color)] focus:outline-none lg:text-5xl',
           'border-[var(--border-color)] focus:border-[var(--secondary-color)]/80'
         )}
         onChange={e => setInputValue(e.target.value)}
@@ -240,10 +244,10 @@ const InputGame = ({ isHidden, isReverse = false }: InputGameProps) => {
       <button
         ref={buttonRef}
         className={clsx(
-          'text-xl font-medium py-4 px-16 rounded-3xl',
+          'rounded-3xl px-16 py-4 text-xl font-medium',
           'flex flex-row items-end gap-2',
           buttonBorderStyles,
-          'active:scale-95 md:active:scale-98 active:duration-200',
+          'active:scale-95 active:duration-200 md:active:scale-98',
           'text-[var(--secondary-color)]',
           'border-b-4 border-[var(--border-color)] hover:border-[var(--secondary-color)]/80'
         )}

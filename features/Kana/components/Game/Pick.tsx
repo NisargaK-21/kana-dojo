@@ -12,6 +12,7 @@ import { pickGameKeyMappings } from '@/shared/lib/keyMappings';
 import { useStopwatch } from 'react-timer-hook';
 import useStats from '@/shared/hooks/useStats';
 import useStatsStore from '@/features/Progress/store/useStatsStore';
+import { useShallow } from 'zustand/react/shallow';
 import Stars from '@/shared/components/Game/Stars';
 import { useCrazyModeTrigger } from '@/features/CrazyMode/hooks/useCrazyModeTrigger';
 import { getGlobalAdaptiveSelector } from '@/shared/lib/adaptiveSelection';
@@ -32,38 +33,40 @@ interface OptionButtonProps {
   buttonRef?: (elem: HTMLButtonElement | null) => void;
 }
 
-const OptionButton = memo(({ variantChar, index, isWrong, onClick, buttonRef }: OptionButtonProps) => {
-  return (
-    <button
-      ref={buttonRef}
-      key={variantChar + index}
-      type="button"
-      disabled={isWrong}
-      className={clsx(
-        'text-5xl font-semibold pb-6 pt-3 w-full sm:w-1/5 flex flex-row justify-center items-center gap-1 relative',
-        buttonBorderStyles,
-        'border-b-4 ',
-        isWrong &&
-          'hover:bg-[var(--card-color)] hover:border-[var(--border-color)] text-[var(--border-color)]',
-        !isWrong &&
-          'text-[var(--secondary-color)] border-[var(--secondary-color)]/50 hover:border-[var(--secondary-color)]'
-      )}
-      onClick={() => onClick(variantChar)}
-    >
-      <span>{variantChar}</span>
-      <span
+const OptionButton = memo(
+  ({ variantChar, index, isWrong, onClick, buttonRef }: OptionButtonProps) => {
+    return (
+      <button
+        ref={buttonRef}
+        key={variantChar + index}
+        type='button'
+        disabled={isWrong}
         className={clsx(
-          'absolute right-4 top-1/2 -translate-y-1/2 hidden lg:inline-flex h-5 min-w-5 items-center justify-center text-xs leading-none rounded-full bg-[var(--border-color)] px-1',
-          isWrong
-            ? 'text-[var(--border-color)]'
-            : 'text-[var(--secondary-color)]'
+          'relative flex w-full flex-row items-center justify-center gap-1 pt-3 pb-6 text-5xl font-semibold sm:w-1/5',
+          buttonBorderStyles,
+          'border-b-4',
+          isWrong &&
+            'text-[var(--border-color)] hover:border-[var(--border-color)] hover:bg-[var(--card-color)]',
+          !isWrong &&
+            'border-[var(--secondary-color)]/50 text-[var(--secondary-color)] hover:border-[var(--secondary-color)]'
         )}
+        onClick={() => onClick(variantChar)}
       >
-        {index + 1}
-      </span>
-    </button>
-  );
-});
+        <span>{variantChar}</span>
+        <span
+          className={clsx(
+            'absolute top-1/2 right-4 hidden h-5 min-w-5 -translate-y-1/2 items-center justify-center rounded-full bg-[var(--border-color)] px-1 text-xs leading-none lg:inline-flex',
+            isWrong
+              ? 'text-[var(--border-color)]'
+              : 'text-[var(--secondary-color)]'
+          )}
+        >
+          {index + 1}
+        </span>
+      </button>
+    );
+  }
+);
 
 OptionButton.displayName = 'OptionButton';
 
@@ -85,10 +88,12 @@ const PickGame = ({ isHidden }: PickGameProps) => {
     wrongsToDecrease: 2
   });
 
-  const { score, setScore } = useStatsStore(state => ({
-    score: state.score,
-    setScore: state.setScore
-  }));
+  const { score, setScore } = useStatsStore(
+    useShallow(state => ({
+      score: state.score,
+      setScore: state.setScore
+    }))
+  );
 
   const speedStopwatch = useStopwatch({ autoStart: false });
 
@@ -104,42 +109,53 @@ const PickGame = ({ isHidden }: PickGameProps) => {
   const { playErrorTwice } = useError();
   const { trigger: triggerCrazyMode } = useCrazyModeTrigger();
 
-  const kanaGroupIndices = useKanaStore((state) => state.kanaGroupIndices);
+  const kanaGroupIndices = useKanaStore(state => state.kanaGroupIndices);
 
   const selectedKana = useMemo(
-    () => kanaGroupIndices.map((i) => kana[i].kana).flat(),
+    () => kanaGroupIndices.map(i => kana[i].kana).flat(),
     [kanaGroupIndices]
   );
   const selectedRomaji = useMemo(
-    () => kanaGroupIndices.map((i) => kana[i].romanji).flat(),
+    () => kanaGroupIndices.map(i => kana[i].romanji).flat(),
     [kanaGroupIndices]
   );
 
   // For normal pick mode
   const selectedPairs = useMemo(
-    () => Object.fromEntries(selectedKana.map((key, i) => [key, selectedRomaji[i]])),
+    () =>
+      Object.fromEntries(
+        selectedKana.map((key, i) => [key, selectedRomaji[i]])
+      ),
     [selectedKana, selectedRomaji]
   );
 
   // For reverse pick mode
   const selectedPairs1 = useMemo(
-    () => Object.fromEntries(selectedRomaji.map((key, i) => [key, selectedKana[i]])),
+    () =>
+      Object.fromEntries(
+        selectedRomaji.map((key, i) => [key, selectedKana[i]])
+      ),
     [selectedRomaji, selectedKana]
   );
   const selectedPairs2 = useMemo(
-    () => Object.fromEntries(
-      selectedRomaji
-        .map((key, i) => [key, selectedKana[i]])
-        .reverse()
-    ),
+    () =>
+      Object.fromEntries(
+        selectedRomaji.map((key, i) => [key, selectedKana[i]]).reverse()
+      ),
     [selectedRomaji, selectedKana]
   );
   const reversedPairs1 = useMemo(
-    () => Object.fromEntries(Object.entries(selectedPairs1).map(([key, value]) => [value, key])),
+    () =>
+      Object.fromEntries(
+        Object.entries(selectedPairs1).map(([key, value]) => [value, key])
+      ),
     [selectedPairs1]
   );
   const reversedPairs2 = useMemo(
-    () => Object.fromEntries(Object.entries(selectedPairs2).map(([key, value]) => [value, key])),
+    () =>
+      Object.fromEntries(
+        Object.entries(selectedPairs2).map(([key, value]) => [value, key])
+      ),
     [selectedPairs2]
   );
 
@@ -166,24 +182,33 @@ const PickGame = ({ isHidden }: PickGameProps) => {
     : selectedPairs2[correctRomajiCharReverse];
 
   // Get incorrect options based on mode and current option count
-  const getIncorrectOptions = useCallback((count: number) => {
-    const incorrectCount = count - 1; // One slot is for the correct answer
-    if (!isReverse) {
-      const { [correctKanaChar]: _, ...incorrectPairs } = selectedPairs;
-      void _;
-      return [...Object.values(incorrectPairs)]
-        .sort(() => random.real(0, 1) - 0.5)
-        .slice(0, incorrectCount);
-    } else {
-      const { [correctRomajiCharReverse]: _, ...incorrectPairs } = random.bool()
-        ? selectedPairs1
-        : selectedPairs2;
-      void _;
-      return [...Object.values(incorrectPairs)]
-        .sort(() => random.real(0, 1) - 0.5)
-        .slice(0, incorrectCount);
-    }
-  }, [isReverse, correctKanaChar, correctRomajiCharReverse, selectedPairs, selectedPairs1, selectedPairs2]);
+  const getIncorrectOptions = useCallback(
+    (count: number) => {
+      const incorrectCount = count - 1; // One slot is for the correct answer
+      if (!isReverse) {
+        const { [correctKanaChar]: _, ...incorrectPairs } = selectedPairs;
+        void _;
+        return [...Object.values(incorrectPairs)]
+          .sort(() => random.real(0, 1) - 0.5)
+          .slice(0, incorrectCount);
+      } else {
+        const { [correctRomajiCharReverse]: _, ...incorrectPairs } =
+          random.bool() ? selectedPairs1 : selectedPairs2;
+        void _;
+        return [...Object.values(incorrectPairs)]
+          .sort(() => random.real(0, 1) - 0.5)
+          .slice(0, incorrectCount);
+      }
+    },
+    [
+      isReverse,
+      correctKanaChar,
+      correctRomajiCharReverse,
+      selectedPairs,
+      selectedPairs1,
+      selectedPairs2
+    ]
+  );
 
   const [shuffledVariants, setShuffledVariants] = useState(() => {
     const incorrectOptions = getIncorrectOptions(optionCount);
@@ -216,7 +241,16 @@ const PickGame = ({ isHidden }: PickGameProps) => {
     if (isReverse) {
       speedStopwatch.start();
     }
-  }, [isReverse, correctRomajiCharReverse, correctKanaChar, correctRomajiChar, correctKanaCharReverse, optionCount, getIncorrectOptions, speedStopwatch]);
+  }, [
+    isReverse,
+    correctRomajiCharReverse,
+    correctKanaChar,
+    correctRomajiChar,
+    correctKanaCharReverse,
+    optionCount,
+    getIncorrectOptions,
+    speedStopwatch
+  ]);
 
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -247,103 +281,152 @@ const PickGame = ({ isHidden }: PickGameProps) => {
     };
   }, [shuffledVariants]);
 
-  const handleCorrectAnswer = useCallback((correctChar: string) => {
-    speedStopwatch.pause();
-    addCorrectAnswerTime(speedStopwatch.totalMilliseconds / 1000);
-    speedStopwatch.reset();
-    playCorrect();
-    addCharacterToHistory(correctChar);
-    incrementCharacterScore(correctChar, 'correct');
-    incrementCorrectAnswers();
-    setScore(score + 1);
-    setWrongSelectedAnswers([]);
-    triggerCrazyMode();
-    // Update adaptive weight system - reduces probability of mastered characters
-    adaptiveSelector.updateCharacterWeight(correctChar, true);
-    // Smart algorithm decides next mode based on performance
-    decideNextMode();
-    // Progressive difficulty - track correct answer
-    recordDifficultyCorrect();
-  }, [speedStopwatch, addCorrectAnswerTime, playCorrect, addCharacterToHistory, incrementCharacterScore, incrementCorrectAnswers, score, triggerCrazyMode, adaptiveSelector, decideNextMode, recordDifficultyCorrect]);
+  const handleCorrectAnswer = useCallback(
+    (correctChar: string) => {
+      speedStopwatch.pause();
+      addCorrectAnswerTime(speedStopwatch.totalMilliseconds / 1000);
+      speedStopwatch.reset();
+      playCorrect();
+      addCharacterToHistory(correctChar);
+      incrementCharacterScore(correctChar, 'correct');
+      incrementCorrectAnswers();
+      setScore(score + 1);
+      setWrongSelectedAnswers([]);
+      triggerCrazyMode();
+      // Update adaptive weight system - reduces probability of mastered characters
+      adaptiveSelector.updateCharacterWeight(correctChar, true);
+      // Smart algorithm decides next mode based on performance
+      decideNextMode();
+      // Progressive difficulty - track correct answer
+      recordDifficultyCorrect();
+    },
+    [
+      speedStopwatch,
+      addCorrectAnswerTime,
+      playCorrect,
+      addCharacterToHistory,
+      incrementCharacterScore,
+      incrementCorrectAnswers,
+      score,
+      triggerCrazyMode,
+      adaptiveSelector,
+      decideNextMode,
+      recordDifficultyCorrect
+    ]
+  );
 
-  const handleWrongAnswer = useCallback((selectedChar: string) => {
-    setWrongSelectedAnswers([...wrongSelectedAnswers, selectedChar]);
-    playErrorTwice();
-    const currentChar = isReverse ? correctRomajiCharReverse : correctKanaChar;
-    incrementCharacterScore(currentChar, 'wrong');
-    incrementWrongAnswers();
-    if (score - 1 < 0) {
-      setScore(0);
-    } else {
-      setScore(score - 1);
-    }
-    triggerCrazyMode();
-    // Update adaptive weight system - increases probability of difficult characters
-    adaptiveSelector.updateCharacterWeight(currentChar, false);
-    // Reset consecutive streak without changing mode (avoids rerolling the question)
-    recordWrongAnswer();
-    // Progressive difficulty - track wrong answer
-    recordDifficultyWrong();
-  }, [wrongSelectedAnswers, playErrorTwice, isReverse, correctRomajiCharReverse, correctKanaChar, incrementCharacterScore, incrementWrongAnswers, score, triggerCrazyMode, adaptiveSelector, recordWrongAnswer, recordDifficultyWrong]);
+  const handleWrongAnswer = useCallback(
+    (selectedChar: string) => {
+      setWrongSelectedAnswers([...wrongSelectedAnswers, selectedChar]);
+      playErrorTwice();
+      const currentChar = isReverse
+        ? correctRomajiCharReverse
+        : correctKanaChar;
+      incrementCharacterScore(currentChar, 'wrong');
+      incrementWrongAnswers();
+      if (score - 1 < 0) {
+        setScore(0);
+      } else {
+        setScore(score - 1);
+      }
+      triggerCrazyMode();
+      // Update adaptive weight system - increases probability of difficult characters
+      adaptiveSelector.updateCharacterWeight(currentChar, false);
+      // Reset consecutive streak without changing mode (avoids rerolling the question)
+      recordWrongAnswer();
+      // Progressive difficulty - track wrong answer
+      recordDifficultyWrong();
+    },
+    [
+      wrongSelectedAnswers,
+      playErrorTwice,
+      isReverse,
+      correctRomajiCharReverse,
+      correctKanaChar,
+      incrementCharacterScore,
+      incrementWrongAnswers,
+      score,
+      triggerCrazyMode,
+      adaptiveSelector,
+      recordWrongAnswer,
+      recordDifficultyWrong
+    ]
+  );
 
-  const handleOptionClick = useCallback((selectedChar: string) => {
-    if (!isReverse) {
-      // Normal pick mode logic
-      if (selectedChar === correctRomajiChar) {
-        handleCorrectAnswer(correctKanaChar);
-        // Use weighted selection - prioritizes characters user struggles with
-        const newKana = adaptiveSelector.selectWeightedCharacter(
-          selectedKana,
-          correctKanaChar
-        );
-        adaptiveSelector.markCharacterSeen(newKana);
-        setCorrectKanaChar(newKana);
-        setFeedback(
-          <>
-            <span>{`${correctKanaChar} = ${correctRomajiChar} `}</span>
-            <CircleCheck className="inline text-[var(--main-color)]" />
-          </>
-        );
+  const handleOptionClick = useCallback(
+    (selectedChar: string) => {
+      if (!isReverse) {
+        // Normal pick mode logic
+        if (selectedChar === correctRomajiChar) {
+          handleCorrectAnswer(correctKanaChar);
+          // Use weighted selection - prioritizes characters user struggles with
+          const newKana = adaptiveSelector.selectWeightedCharacter(
+            selectedKana,
+            correctKanaChar
+          );
+          adaptiveSelector.markCharacterSeen(newKana);
+          setCorrectKanaChar(newKana);
+          setFeedback(
+            <>
+              <span>{`${correctKanaChar} = ${correctRomajiChar} `}</span>
+              <CircleCheck className='inline text-[var(--main-color)]' />
+            </>
+          );
+        } else {
+          handleWrongAnswer(selectedChar);
+          setFeedback(
+            <>
+              <span>{`${correctKanaChar} ≠ ${selectedChar} `}</span>
+              <CircleX className='inline text-[var(--main-color)]' />
+            </>
+          );
+        }
       } else {
-        handleWrongAnswer(selectedChar);
-        setFeedback(
-          <>
-            <span>{`${correctKanaChar} ≠ ${selectedChar} `}</span>
-            <CircleX className="inline text-[var(--main-color)]" />
-          </>
-        );
+        // Reverse pick mode logic
+        if (
+          reversedPairs1[selectedChar] === correctRomajiCharReverse ||
+          reversedPairs2[selectedChar] === correctRomajiCharReverse
+        ) {
+          handleCorrectAnswer(correctRomajiCharReverse);
+          // Use weighted selection - prioritizes characters user struggles with
+          const newRomaji = adaptiveSelector.selectWeightedCharacter(
+            selectedRomaji,
+            correctRomajiCharReverse
+          );
+          adaptiveSelector.markCharacterSeen(newRomaji);
+          setCorrectRomajiCharReverse(newRomaji);
+          setFeedback(
+            <>
+              <span>{`${correctRomajiCharReverse} = ${correctKanaCharReverse} `}</span>
+              <CircleCheck className='inline text-[var(--main-color)]' />
+            </>
+          );
+        } else {
+          handleWrongAnswer(selectedChar);
+          setFeedback(
+            <>
+              <span>{`${correctRomajiCharReverse} ≠ ${selectedChar} `}</span>
+              <CircleX className='inline text-[var(--main-color)]' />
+            </>
+          );
+        }
       }
-    } else {
-      // Reverse pick mode logic
-      if (
-        reversedPairs1[selectedChar] === correctRomajiCharReverse ||
-        reversedPairs2[selectedChar] === correctRomajiCharReverse
-      ) {
-        handleCorrectAnswer(correctRomajiCharReverse);
-        // Use weighted selection - prioritizes characters user struggles with
-        const newRomaji = adaptiveSelector.selectWeightedCharacter(
-          selectedRomaji,
-          correctRomajiCharReverse
-        );
-        adaptiveSelector.markCharacterSeen(newRomaji);
-        setCorrectRomajiCharReverse(newRomaji);
-        setFeedback(
-          <>
-            <span>{`${correctRomajiCharReverse} = ${correctKanaCharReverse} `}</span>
-            <CircleCheck className="inline text-[var(--main-color)]" />
-          </>
-        );
-      } else {
-        handleWrongAnswer(selectedChar);
-        setFeedback(
-          <>
-            <span>{`${correctRomajiCharReverse} ≠ ${selectedChar} `}</span>
-            <CircleX className="inline text-[var(--main-color)]" />
-          </>
-        );
-      }
-    }
-  }, [isReverse, correctRomajiChar, handleCorrectAnswer, correctKanaChar, adaptiveSelector, selectedKana, handleWrongAnswer, reversedPairs1, reversedPairs2, correctRomajiCharReverse, selectedRomaji, correctKanaCharReverse]);
+    },
+    [
+      isReverse,
+      correctRomajiChar,
+      handleCorrectAnswer,
+      correctKanaChar,
+      adaptiveSelector,
+      selectedKana,
+      handleWrongAnswer,
+      reversedPairs1,
+      reversedPairs2,
+      correctRomajiCharReverse,
+      selectedRomaji,
+      correctKanaCharReverse
+    ]
+  );
 
   const displayChar = isReverse ? correctRomajiCharReverse : correctKanaChar;
   const gameMode = 'pick';
@@ -355,16 +438,16 @@ const PickGame = ({ isHidden }: PickGameProps) => {
   return (
     <div
       className={clsx(
-        'flex flex-col gap-4 sm:gap-10 items-center w-full sm:w-4/5',
+        'flex w-full flex-col items-center gap-4 sm:w-4/5 sm:gap-10',
         isHidden ? 'hidden' : ''
       )}
     >
       <GameIntel gameMode={gameMode} feedback={feedback} />
-      <div className="flex flex-row items-center gap-1">
-        <p className="text-8xl sm:text-9xl font-medium">{displayChar}</p>
+      <div className='flex flex-row items-center gap-1'>
+        <p className='text-8xl font-medium sm:text-9xl'>{displayChar}</p>
       </div>
       {/* First row - always 3 options */}
-      <div className="flex flex-row w-full gap-5 sm:gap-0 sm:justify-evenly">
+      <div className='flex w-full flex-row gap-5 sm:justify-evenly sm:gap-0'>
         {topRow.map((variantChar: string, i: number) => (
           <OptionButton
             key={variantChar + i}
@@ -372,7 +455,7 @@ const PickGame = ({ isHidden }: PickGameProps) => {
             index={i}
             isWrong={wrongSelectedAnswers.includes(variantChar)}
             onClick={handleOptionClick}
-            buttonRef={(elem) => {
+            buttonRef={elem => {
               buttonRefs.current[i] = elem;
             }}
           />
@@ -380,7 +463,7 @@ const PickGame = ({ isHidden }: PickGameProps) => {
       </div>
       {/* Second row - progressively fills with 1-3 additional options */}
       {bottomRow.length > 0 && (
-        <div className="flex flex-row w-full gap-5 sm:gap-0 sm:justify-evenly">
+        <div className='flex w-full flex-row gap-5 sm:justify-evenly sm:gap-0'>
           {bottomRow.map((variantChar: string, i: number) => (
             <OptionButton
               key={variantChar + i}
@@ -388,7 +471,7 @@ const PickGame = ({ isHidden }: PickGameProps) => {
               index={3 + i}
               isWrong={wrongSelectedAnswers.includes(variantChar)}
               onClick={handleOptionClick}
-              buttonRef={(elem) => {
+              buttonRef={elem => {
                 buttonRefs.current[3 + i] = elem;
               }}
             />
