@@ -2,36 +2,27 @@
 
 ## Problem
 
-The `next-intl` middleware causes extremely long compilation times in development (~65 seconds) due to:
+The `next-intl` plugin causes long compilation times in development (~65 seconds) due to:
 
 1. **next-intl plugin** - Analyzes entire codebase for translation calls
-2. **Middleware overhead** - Runs on every request even with single locale
-3. **Dynamic JSON imports** - 9 namespace files dynamically imported on first request
-4. **Turbopack compilation** - Module resolution and compilation overhead
+2. **Dynamic JSON imports** - 9 namespace files dynamically imported on first request
+3. **Turbopack compilation** - Module resolution and compilation overhead
+
+## ⚠️ Critical Understanding: Middleware Cannot Be Disabled
+
+**The middleware MUST always run, even in dev mode.** Here's why:
+
+With `localePrefix: 'never'`:
+- Users access clean URLs: `/`, `/kana`, `/vocabulary`
+- But pages are located in: `app/[locale]/page.tsx`, `app/[locale]/kana/page.tsx`
+- The middleware performs **internal URL rewriting**: `/` → `/en` (default locale)
+- Without this rewriting, Next.js cannot match routes → **404 errors**
+
+This is not optional - it's a fundamental requirement of the routing architecture.
 
 ## Solutions Implemented
 
-### ✅ Solution 1: Disable Middleware in Dev Mode (APPLIED)
-
-**File:** `middleware.ts`
-
-**What it does:**
-- Skips middleware execution completely in development
-- Returns `NextResponse.next()` immediately without processing
-- Only runs `next-intl` middleware in production
-
-**Impact:**
-- ⚡ **Massive performance gain** - Eliminates middleware compilation overhead
-- ✅ Safe for dev with single locale (`'en'`) and `localePrefix: 'never'`
-- ✅ Production behavior unchanged
-
-**Trade-offs:**
-- None for single-locale development
-- Must re-enable when testing multi-locale features
-
----
-
-### ✅ Solution 2: Disable next-intl Plugin in Dev (APPLIED)
+### ✅ Solution 1: Disable next-intl Plugin in Dev (APPLIED)
 
 **File:** `next.config.ts`
 
@@ -50,7 +41,7 @@ The `next-intl` middleware causes extremely long compilation times in developmen
 
 ---
 
-### 📋 Solution 3: Static Imports (OPTIONAL)
+### 📋 Solution 2: Static Imports (OPTIONAL)
 
 **File:** `core/i18n/request-optimized.ts` (created as reference)
 
@@ -85,16 +76,18 @@ The `next-intl` middleware causes extremely long compilation times in developmen
 
 ### Middleware (`middleware.ts`)
 ```typescript
-const isDev = process.env.NODE_ENV !== 'production';
-const intlMiddleware = isDev ? null : createMiddleware(routing);
+// CRITICAL: Middleware MUST always run for URL rewriting
+const intlMiddleware = createMiddleware(routing);
 
 export default function middleware(request: NextRequest) {
-  if (isDev) {
-    return NextResponse.next(); // Skip in dev
-  }
-  return intlMiddleware!(request); // Run in production
+  return intlMiddleware(request);
 }
 ```
+
+**Why it can't be disabled:**
+- Rewrites `/` → `/en` internally
+- Required for `localePrefix: 'never'` to work
+- Cannot be optimized away without breaking routing
 
 ### Next.js Config (`next.config.ts`)
 ```typescript
@@ -149,12 +142,14 @@ This tests the actual production configuration with all optimizations.
 
 ## Performance Comparison
 
-| Metric | Before | After (Solutions 1+2) | Improvement |
-|--------|--------|----------------------|-------------|
-| **Initial Compilation** | ~65s | ~5-10s | **85-90% faster** |
-| **Middleware Overhead** | Every request | None in dev | **100% reduction** |
-| **Hot Reload** | Slow | Fast | **Significantly improved** |
+| Metric | Before | After (Solution 1) | Improvement |
+|--------|--------|-------------------|-------------|
+| **Initial Compilation** | ~65s | ~20-30s | **50-70% faster** |
+| **Plugin Analysis** | Full codebase | Skipped in dev | **Significant reduction** |
+| **Hot Reload** | Slow | Faster | **Improved** |
 | **Production Build** | Unchanged | Unchanged | No impact |
+
+**Note:** Middleware overhead remains (required for routing). The main gain is from disabling the plugin's codebase analysis.
 
 ---
 
@@ -162,17 +157,7 @@ This tests the actual production configuration with all optimizations.
 
 To revert to original behavior (if needed):
 
-### 1. Restore middleware
-```typescript
-// middleware.ts
-const intlMiddleware = createMiddleware(routing);
-
-export default function middleware(request: NextRequest) {
-  return intlMiddleware(request);
-}
-```
-
-### 2. Restore next.config.ts
+### Restore next.config.ts
 ```typescript
 // next.config.ts
 const withNextIntl = createNextIntlPlugin('./core/i18n/request.ts');
@@ -204,9 +189,10 @@ const withNextIntl = createNextIntlPlugin('./core/i18n/request.ts');
 ## Recommended Setup
 
 **For Daily Development:**
-- ✅ Solutions 1 & 2 applied (middleware and plugin disabled in dev)
+- ✅ Solution 1 applied (plugin disabled in dev)
+- ✅ Middleware always runs (required for routing)
 - ✅ Single locale (`'en'`)
-- ✅ Fast compilation and hot reload
+- ✅ Improved compilation times
 
 **Before Deploying:**
 - ✅ Run production build: `npm run build`
@@ -214,15 +200,15 @@ const withNextIntl = createNextIntlPlugin('./core/i18n/request.ts');
 - ✅ Verify i18n routing works correctly
 
 **For i18n Feature Work:**
-- ✅ Use production build for testing
-- ✅ Or temporarily enable solutions by setting `isDev = false`
+- ✅ Update `routing.ts` to include all locales: `['en', 'es', 'ja']`
+- ✅ Test in production build for full validation
 
 ---
 
 ## Files Modified
 
-- ✅ `middleware.ts` - Conditional middleware execution
-- ✅ `next.config.ts` - Conditional plugin wrapping
+- ✅ `middleware.ts` - Documented why middleware must always run
+- ✅ `next.config.ts` - Conditional plugin wrapping (disabled in dev)
 - 📄 `core/i18n/request-optimized.ts` - Optional static imports (reference only)
 - 📄 `docs/I18N_DEV_OPTIMIZATION.md` - This documentation
 
