@@ -64,7 +64,6 @@ const AchievementNotification = ({
             'relative w-80 cursor-pointer p-4',
             'bg-[var(--card-color)] shadow-lg',
             cardBorderStyles,
-            'border-l-4 border-l-yellow-500',
             'transition-shadow duration-200 hover:shadow-xl'
           )}
           onClick={handleViewDetails}
