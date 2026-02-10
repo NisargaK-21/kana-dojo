@@ -36,7 +36,7 @@ const SUPPORTED_EXTENSIONS = new Set([
 ]);
 const WIDTHS = [1920, 2560, 3840];
 
-const AVIF_OPTIONS: sharp.AvifOptions = { quality: 65, effort: 6 };
+const AVIF_OPTIONS: sharp.AvifOptions = { quality: 50, effort: 6 };
 const WEBP_OPTIONS: sharp.WebpOptions = { quality: 78 };
 
 const forceReprocess = process.argv.includes('--force');
