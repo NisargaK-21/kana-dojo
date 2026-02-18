@@ -109,6 +109,30 @@ export default function SEOContent({ locale: _locale = 'en' }: SEOContentProps) 
         </div>
       </div>
 
+      <div className='rounded-xl border border-(--border-color) bg-(--background-color) p-4'>
+        <h3 className='mb-2 text-lg font-semibold text-(--main-color)'>
+          Accuracy and limitations
+        </h3>
+        <ul className='list-disc space-y-1 pl-5 text-sm text-(--secondary-color)'>
+          <li>
+            Machine translation may miss nuance in humor, slang, honorifics, and
+            context-heavy writing.
+          </li>
+          <li>
+            Names, dialects, and anime-style expressions can have multiple valid
+            readings.
+          </li>
+          <li>
+            For important content, compare alternatives and verify key terms with
+            kana/kanji study tools.
+          </li>
+          <li>
+            Best practice: split long paragraphs into shorter sentences for
+            cleaner results.
+          </li>
+        </ul>
+      </div>
+
       <div className='grid gap-3 sm:grid-cols-2'>
         <Link href='/kana' className='rounded-xl border border-(--border-color) p-4 text-sm text-(--secondary-color) hover:bg-(--background-color)'>
           <span className='block font-semibold text-(--main-color)'>Hiragana & Katakana practice</span>
