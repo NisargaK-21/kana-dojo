@@ -81,7 +81,7 @@ function EffectCard({
         aria-label={name}
       />
       {emoji ? (
-        <span className='text-3xl leading-none'>{emoji}</span>
+        <span className='text-4xl leading-none'>{emoji}</span>
       ) : (
         <span className='text-lg leading-none text-(--secondary-color)'>-</span>
       )}
